@@ -13,10 +13,10 @@ def populate():
          'views': 114,},
         {'title':'How to Think like a Computer Scientist',
          'url':'http://www.greenteapress.com/thinkpython/',
-         'views': 53},
+         'views': 48},
         {'title':'Learn Python in 10 Minutes',
          'url':'http://www.korokithakis.net/tutorials/python/',
-         'views': 20} ]
+         'views': 90} ]
     
     django_pages = [
         {'title':'Official Django Tutorial',
@@ -27,7 +27,7 @@ def populate():
          'views': 12},
         {'title':'How to Tango with Django',
          'url':'http://www.tangowithdjango.com/',
-         'views': 1258} ]
+         'views': 134} ]
     
     other_pages = [
         {'title':'Bottle',
