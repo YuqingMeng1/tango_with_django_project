@@ -5,8 +5,7 @@ from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 from django.urls import reverse
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-
-
+from datetime import datetime
 
 
 def index(request):
@@ -14,17 +13,23 @@ def index(request):
     page_list = Page.objects.order_by('-views')[:5]
 
     context_dict = {}
-    
     context_dict = {'boldmessage': 'Crunchy, creamy, cookie, candy, cupcake!'}
     context_dict['categories'] = category_list
     context_dict['pages'] = page_list
+    context_dict['visits'] = int(request.COOKIES.get('visits', '1'))
     
-    return render(request, 'rango/index.html', context = context_dict)
+    response = render(request, 'rango/index.html', context=context_dict)
+  
+    visitor_cookie_handler(request, response)
+
+    return response
 
 def about(request):
-   
-    return render(request, 'rango/about.html')
+    if request.session.test_cookie_worked():
+        print("TEST COOKIE WORKED!")
+        request.session.delete_test_cookie()
 
+    return render(request, 'rango/about.html')
 
 def show_category(request, category_name_slug):
     context_dict = {}
@@ -32,15 +37,13 @@ def show_category(request, category_name_slug):
     try:
         category = Category.objects.get(slug=category_name_slug)
         pages = Page.objects.filter(category=category)
-
+.
         context_dict['pages'] = pages
         context_dict['category'] = category
     except Category.DoesNotExist:
-      
         context_dict['category'] = None
         context_dict['pages'] = None
 
-   
     return render(request, 'rango/category.html', context=context_dict)
 
 @login_required
@@ -48,15 +51,10 @@ def add_category(request):
     form = CategoryForm()
     if request.method == 'POST':
         form = CategoryForm(request.POST)
-
-        
         if form.is_valid():
-            # Save the new category to the database.
             form.save(commit=True)
-            # redirect the user back to the index view
             return redirect(reverse('rango:index'))
         else:
-          
             print(form.errors)
     
     return render(request, 'rango/add_category.html', {'form': form})
@@ -91,7 +89,6 @@ def add_page(request, category_name_slug):
     return render(request, 'rango/add_page.html', context=context_dict)
 
 def register(request):
-    # change to true when registration succeeds.
     registered = False
 
     if request.method == 'POST':
@@ -106,7 +103,6 @@ def register(request):
             profile = profile_form.save(commit=False)
             profile.user = user
 
-            # check if the user provides a profile picture.
             if 'picture' in request.FILES:
                 profile.picture = request.FILES['picture']
 
@@ -122,14 +118,12 @@ def register(request):
 
 def user_login(request):
     if request.method == 'POST':
-        # get user's username and password
         username = request.POST.get('username')
         password = request.POST.get('password')
 
         user = authenticate(username=username, password=password)
 
         if user:
-            # check if the account is active
             if user.is_active:
                 login(request, user)
                 return redirect(reverse('rango:index'))
@@ -149,3 +143,15 @@ def restricted(request):
 def user_logout(request):
     logout(request)
     return redirect(reverse('rango:index')) 
+def visitor_cookie_handler(request, response):
+    visits = int(request.COOKIES.get('visits', '1'))
+
+    last_visit_cookie = request.COOKIES.get('last_visit', str(datetime.now()))
+    last_visit_time = datetime.strptime(last_visit_cookie[:-7], '%Y-%m-%d %H:%M:%S')
+
+    if (datetime.now() - last_visit_time).days > 0:
+        response.set_cookie('last_visit', str(datetime.now()))
+    else:
+        response.set_cookie('last_visit', last_visit_cookie)
+
+    response.set_cookie('visits', visits)
